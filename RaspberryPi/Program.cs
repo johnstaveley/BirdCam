@@ -51,12 +51,18 @@ namespace BirdCamRaspberryPi
 
         }
 
+        /// <summary>
+        /// Takes an image and either saves it locally or uploads it to Azure IoT Hub
+        /// </summary>
+        /// <param name="tag"></param>
+        /// <param name="saveLocal">Default=False</param>
+        /// <returns></returns>
         static async Task CaptureImage(string tag, bool saveLocal = false)
         {
-            var pictureBytes = await Pi.Camera.CaptureImageJpegAsync(640, 480);
+            var pictureBytes = await Pi.Camera.CaptureImageJpegAsync(1280, 960);
             var fileName = $"capture-{tag}.jpg";
-            var targetPath = $"/home/pi/Pictures/{fileName}";
             if (saveLocal) {
+                var targetPath = $"/home/pi/Pictures/{fileName}";
                 if (File.Exists(targetPath))
                 {
                     File.Delete(targetPath);
@@ -67,7 +73,7 @@ namespace BirdCamRaspberryPi
             Console.WriteLine($"Took picture {fileName} with size: {pictureBytes.Length} bytes");
         }
 
-        static async Task UploadImage(Byte[] pictureBytes, string fileName)
+        static async Task UploadImage(byte[] pictureBytes, string fileName)
         {
             var fileUploadSasUriRequest = new FileUploadSasUriRequest
             {
