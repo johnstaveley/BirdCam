@@ -1,21 +1,18 @@
+using BirdCamFunction.Model;
 using Microsoft.Azure.CognitiveServices.Vision.ComputerVision;
 using Microsoft.Azure.CognitiveServices.Vision.ComputerVision.Models;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Extensions.Logging;
-using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Reflection;
 using System.Threading.Tasks;
-using BirdCamFunction.Model;
-using Microsoft.Extensions.Configuration;
 
 namespace BirdCamFunction
 {
     public static class ImageAnalyser
     {
         [FunctionName("Process")]
-        public static async Task Process([BlobTrigger("images/{name}", Connection = "IoTStorage")] Stream myBlob, string name, ILogger log, ExecutionContext context)
+        public static async Task Process([BlobTrigger("images/{name}", Connection = "IoTStorage")] Stream myBlob, string name, ILogger log)
         {
             log.LogInformation($"C# Blob trigger function Processed image\n Name:{name} \n Size: {myBlob.Length} Bytes");
             var configuration = new AppConfiguration();

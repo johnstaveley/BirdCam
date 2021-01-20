@@ -16,7 +16,7 @@ namespace BirdCamFunction.Model
             var config = new ConfigurationBuilder()
                 .SetBasePath(Environment.CurrentDirectory)
                 .AddJsonFile("local.settings.json", true, true)
-                .AddJsonFile("secret.settings.json", false, true)
+                .AddJsonFile("secret.settings.json", true, true)
                 .AddEnvironmentVariables()
                 .Build();
 
