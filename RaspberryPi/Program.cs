@@ -1,4 +1,5 @@
-﻿using Microsoft.Azure.Devices.Client;
+﻿using BirdCamRaspberryPi.Model;
+using Microsoft.Azure.Devices.Client;
 using Microsoft.Azure.Devices.Client.Transport;
 using Microsoft.WindowsAzure.Storage.Blob;
 using System;
@@ -7,7 +8,6 @@ using System.IO;
 using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
-using BirdCamRaspberryPi.Model;
 using Unosquare.RaspberryIO;
 
 namespace BirdCamRaspberryPi

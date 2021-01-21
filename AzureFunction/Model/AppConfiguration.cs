@@ -8,7 +8,7 @@ namespace BirdCamFunction.Model
         /// <summary>
         /// Storage Container for images
         /// </summary>
-        public string IoTStorage { get; set; }
+        public string IoTStorageConnectionString { get; set; }
         public string ComputerVisionSubscriptionKey { get; set; }
         public string ComputerVisionEndpoint { get; set; }
         public AppConfiguration()
@@ -20,7 +20,7 @@ namespace BirdCamFunction.Model
                 .AddEnvironmentVariables()
                 .Build();
 
-            IoTStorage = config["IoTStorage"];
+            IoTStorageConnectionString = config["IoTStorageConnectionString"];
             ComputerVisionSubscriptionKey = config["ComputerVisionSubscriptionKey"];
             ComputerVisionEndpoint = config["ComputerVisionEndpoint"];
         }
