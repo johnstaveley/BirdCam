@@ -2,14 +2,15 @@ using Azure.Storage.Blobs;
 using BirdCamFunction.Model;
 using Microsoft.Azure.CognitiveServices.Vision.ComputerVision;
 using Microsoft.Azure.CognitiveServices.Vision.ComputerVision.Models;
+using Microsoft.Azure.Devices;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Extensions.Logging;
+using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
-using Newtonsoft.Json;
 
 namespace BirdCamFunction
 {
@@ -34,6 +35,7 @@ namespace BirdCamFunction
                 VisualFeatureTypes.Tags, VisualFeatureTypes.Color, VisualFeatureTypes.Objects
             };
 
+            await Task.Delay(200); // Put in delay to stop spamming cognitive services
             ImageAnalysis imageAnalysis = await client.AnalyzeImageInStreamAsync(myBlob, features);
 
             // Sunmarizes the image content.
@@ -72,10 +74,14 @@ namespace BirdCamFunction
             else if (hasCat)
             {
                 newFileName = "cats/" + imageName;
+                await SendMessageToDevice(configuration, "get them!", log);
             }
             else
             {
                 newFileName = "other/" + imageName;
+            }
+            if (!string.IsNullOrEmpty(configuration.DeviceId)) {
+                newFileName = newFileName.Replace(configuration.DeviceId + "/", "");
             }
             MoveBlob(configuration, imageName, newFileName, log);
             var diagnosticsFileName = Path.ChangeExtension(newFileName, "json");
@@ -122,6 +128,8 @@ namespace BirdCamFunction
                 {
                     using (JsonTextWriter jsonWriter = new JsonTextWriter(writer))
                     {
+                        jsonWriter.Formatting = Formatting.Indented;
+                        jsonWriter.Indentation = 3;
                         JsonSerializer ser = new JsonSerializer();
                         ser.Serialize(jsonWriter, imageAnalysis);
                         jsonWriter.Flush();
@@ -131,8 +139,21 @@ namespace BirdCamFunction
                     }
                 }
             }
-
         }
-
+        public static async Task SendMessageToDevice(AppConfiguration configuration, string message, ILogger log)
+        {
+            var directMethodName = "CatAlert";
+            ServiceClient iothubServiceClient = ServiceClient.CreateFromConnectionString(configuration.IoTHubConnectionString);
+            var methodRequest = new CloudToDeviceMethod(directMethodName, TimeSpan.FromSeconds(10), TimeSpan.FromSeconds(10));
+            try {
+            var result = await iothubServiceClient.InvokeDeviceMethodAsync(configuration.DeviceId,  methodRequest);
+            log.LogInformation($"Call to IoT Hub direct method {directMethodName} returned: {result.Status}");
+            }
+            catch (Exception exception)
+            {
+                // Device might not be online etc
+                log.LogError(exception, $"Failed to send message to direct method {directMethodName}");
+            }
+        }
     }
 }

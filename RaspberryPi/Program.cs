@@ -25,7 +25,7 @@ namespace BirdCamRaspberryPi
             _deviceClient = DeviceClient.CreateFromConnectionString(configuration.IoTHubConnectionString);
             var gpioController = new GpioController(PinNumberingScheme.Board);
             //await _deviceClient.SetReceiveMessageHandlerAsync(OnReceiveMessage, null);
-            //await _deviceClient.SetMethodHandlerAsync("doStuff", DoStuff, null);
+            await _deviceClient.SetMethodHandlerAsync("CatAlert", CatAlert, null);
             var motionSensorPin = 3;
             gpioController.OpenPin(motionSensorPin, PinMode.InputPullDown);
             int captureNumber = 0;
@@ -37,6 +37,7 @@ namespace BirdCamRaspberryPi
                     {
                         captureNumber++;
                         var tag = $"{today}-{captureNumber}";
+                        await Task.Delay(500);
                         await CaptureImage(tag);
                         //await SendMessage(tag);
                         await Task.Delay(4000);
@@ -119,7 +120,7 @@ namespace BirdCamRaspberryPi
                 return;
             }
 
-            Console.WriteLine("Successfully uploaded the file to Azure Storage");
+            //Console.WriteLine("Successfully uploaded the file to Azure Storage");
 
             var successfulFileUploadCompletionNotification = new FileUploadCompletionNotification
             {
@@ -153,11 +154,11 @@ namespace BirdCamRaspberryPi
             await _deviceClient.SendEventAsync(message);
         }
 
-        private static Task<MethodResponse> DoStuff(MethodRequest methodRequest, object userContext)
+        private static Task<MethodResponse> CatAlert(MethodRequest methodRequest, object userContext)
         {
-            Console.WriteLine("IoT Hub invoked the 'doStuff' method.");
-            Console.WriteLine("Payload:");
-            Console.WriteLine(methodRequest.DataAsJson);
+            Console.WriteLine("A Cat has been detected! Take Action!");
+            //Console.WriteLine(methodRequest.DataAsJson);
+            // TODO: Initiate response like fire claxon, lasers etc
             var responseMessage = "{\"response\": \"OK\"}";
             return Task.FromResult(new MethodResponse(Encoding.ASCII.GetBytes(responseMessage), 200));
         }

@@ -6,6 +6,14 @@ namespace BirdCamFunction.Model
     public class AppConfiguration
     {
         /// <summary>
+        /// As registered in the IoT Hub -> IoT Devices blade e.g. RaspberryPi4
+        /// </summary>
+        public string DeviceId { get; set; }
+        /// <summary>
+        /// This is taken from the device blade when it is registered on the IoT Hub
+        /// </summary>
+        public string IoTHubConnectionString { get; set; }
+        /// <summary>
         /// Storage Container for images
         /// </summary>
         public string IoTStorageConnectionString { get; set; }
@@ -20,9 +28,11 @@ namespace BirdCamFunction.Model
                 .AddEnvironmentVariables()
                 .Build();
 
-            IoTStorageConnectionString = config["IoTStorageConnectionString"];
-            ComputerVisionSubscriptionKey = config["ComputerVisionSubscriptionKey"];
             ComputerVisionEndpoint = config["ComputerVisionEndpoint"];
+            ComputerVisionSubscriptionKey = config["ComputerVisionSubscriptionKey"];
+            DeviceId = config["DeviceId"];
+            IoTHubConnectionString = config["IoTHubConnectionString"];
+            IoTStorageConnectionString = config["IoTStorageConnectionString"];
         }
     }
 }

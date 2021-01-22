@@ -15,7 +15,7 @@ Dev Setup
 BirdCamRaspberryPi needs an appsettings.json with a single entry in json format: { "IoTHubConnectionString": "" }
 BirdCamFunction needs two files:
 	local.settings.json: { "IsEncrypted": false, "Values": { "AzureWebJobsStorage": "UseDevelopmentStorage=true", "FUNCTIONS_WORKER_RUNTIME": "dotnet" } }
-	secret.settings.json: { "IoTStorageConnectionString": "", "ComputerVisionEndpoint": "", "ComputerVisionSubscriptionKey": "" }
+	secret.settings.json: { "DeviceId": "", "IoTHubConnectionString": "", "IoTStorageConnectionString": "", "ComputerVisionEndpoint": "", "ComputerVisionSubscriptionKey": "" }
 I then use an SFTP client to deploy BirdCamRaspberryPi to the Pi. Instructions are here: https://docs.microsoft.com/en-us/dotnet/iot/deployment
 Raspberry Pi Software:
 - I use VNC to remote to the Pi and run the code though it is easy to set up to run on boot, enable this in integrations
@@ -40,10 +40,10 @@ if you set this up using the free tiers then it should not cost you anything to 
 - Blob storage. StorageV2 with locally redundant storage is ok. Create containers images and processedimages. Grab connection string and put in secret.settings.json above
 - Application Insights.
 - Iot Hub and go to the following blades:
-  - Shared access policy. For device and put in IoTHubConnectionString
+  - Shared access policy. For device and put in IoTHubConnectionString for BirdCamRaspberryPi and for service put in IoTHubConnectionString for BirdCamFunction
   - File Upload and set storage account and container to images
   - IoT Devices. Add your Raspberry Pi
-  - Networking. If you want additional security, Set Allow public network access to Selected IP Ranges and enter your IP address
+  - Networking. Don't put in IP restrictions if you want your azure function to be able to contact the IoT Hub
 - Function App. Grab publish profile for deploying BirdCamFunction to
 - Cognitive Services. Free version. Grab keys and endpoint and put in secret.settings.json above
 
