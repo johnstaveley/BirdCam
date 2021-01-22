@@ -24,7 +24,6 @@ namespace BirdCamRaspberryPi
             var configuration = new AppConfiguration();
             _deviceClient = DeviceClient.CreateFromConnectionString(configuration.IoTHubConnectionString);
             var gpioController = new GpioController(PinNumberingScheme.Board);
-            //await _deviceClient.SetReceiveMessageHandlerAsync(OnReceiveMessage, null);
             await _deviceClient.SetMethodHandlerAsync("CatAlert", CatAlert, null);
             var motionSensorPin = 3;
             gpioController.OpenPin(motionSensorPin, PinMode.InputPullDown);
@@ -37,9 +36,7 @@ namespace BirdCamRaspberryPi
                     {
                         captureNumber++;
                         var tag = $"{today}-{captureNumber}";
-                        await Task.Delay(500);
                         await CaptureImage(tag);
-                        //await SendMessage(tag);
                         await Task.Delay(4000);
                     }
                     await Task.Delay(1000);
@@ -55,7 +52,7 @@ namespace BirdCamRaspberryPi
         /// <summary>
         /// Takes an image and either saves it locally or uploads it to Azure IoT Hub
         /// </summary>
-        /// <param name="tag"></param>
+        /// <param name="tag">For picture identification</param>
         /// <param name="saveLocal">Default=False</param>
         /// <returns></returns>
         static async Task CaptureImage(string tag, bool saveLocal = false)
@@ -137,23 +134,6 @@ namespace BirdCamRaspberryPi
             //Console.WriteLine("Notified IoT Hub that the file upload succeeded and that the SAS URI can be freed.");
         }
 
-        static async Task SendMessage(string tag)
-        {
-            string messageBody = JsonSerializer.Serialize(
-                        new
-                        {
-                            message = $"Received Capture {tag}"
-                        });
-            using var message = new Message(Encoding.ASCII.GetBytes(messageBody))
-            {
-                ContentType = "application/json",
-                ContentEncoding = "utf-8",
-            };
-
-            // Send the telemetry message
-            await _deviceClient.SendEventAsync(message);
-        }
-
         private static Task<MethodResponse> CatAlert(MethodRequest methodRequest, object userContext)
         {
             Console.WriteLine("A Cat has been detected! Take Action!");
@@ -161,19 +141,6 @@ namespace BirdCamRaspberryPi
             // TODO: Initiate response like fire claxon, lasers etc
             var responseMessage = "{\"response\": \"OK\"}";
             return Task.FromResult(new MethodResponse(Encoding.ASCII.GetBytes(responseMessage), 200));
-        }
-
-        private static async Task OnReceiveMessage(Message message, object userContext)
-        {
-            var reader = new StreamReader(message.BodyStream);
-            var messageContents = await reader.ReadToEndAsync();
-            Console.WriteLine($"Message Contents: {messageContents}");
-            Console.WriteLine("Message Properties:");
-            foreach (var property in message.Properties)
-            {
-                Console.WriteLine($"Key: {property.Key}, Value: {property.Value}");
-            }
-            await _deviceClient.CompleteAsync(message);
         }
     }
 }
