@@ -10,6 +10,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace BirdCamFunction
@@ -25,7 +26,7 @@ namespace BirdCamFunction
             log.LogInformation($"C# Blob trigger function Processed image\n Name:{imageName} \n Size: {myBlob.Length} Bytes");
             var configuration = new AppConfiguration();
 
-            // Create a client
+            // Create a computer vision client
             ComputerVisionClient client = Authenticate(configuration.ComputerVisionEndpoint, configuration.ComputerVisionSubscriptionKey);
 
             // Creating a list that defines the features to be extracted from the image. 
@@ -35,10 +36,9 @@ namespace BirdCamFunction
                 VisualFeatureTypes.Tags, VisualFeatureTypes.Color, VisualFeatureTypes.Objects
             };
 
-            await Task.Delay(200); // Put in delay to stop spamming cognitive services
             ImageAnalysis imageAnalysis = await client.AnalyzeImageInStreamAsync(myBlob, features);
 
-            // Sunmarizes the image content.
+            // Summarises the image content
             var hasBird = imageAnalysis.Tags.Any(a => a.Name.Contains("bird", StringComparison.InvariantCultureIgnoreCase) && a.Confidence > 0.1) ||
                 imageAnalysis.Objects.Any(a => a.ObjectProperty.Contains("bird", StringComparison.InvariantCultureIgnoreCase) && a.Confidence > 0.1);
             var hasCat = imageAnalysis.Tags.Any(a => a.Name.Contains("cat", StringComparison.InvariantCultureIgnoreCase) && a.Confidence > 0.1) ||
@@ -48,25 +48,23 @@ namespace BirdCamFunction
             {
                 log.LogInformation($"{caption.Text} with confidence {caption.Confidence * 100}%");
             }
-            //log.LogInformation("Tags:");
-            //foreach (var tag in imageAnalysis.Tags)
-            //{
-            //    log.LogInformation($"{tag.Name} {tag.Confidence * 100}%");
-            //}
-            //log.LogInformation("Objects:");
-            //foreach (var obj in imageAnalysis.Objects)
-            //{
-            //    log.LogInformation($"{obj.ObjectProperty} with confidence {obj.Confidence} at location {obj.Rectangle.X}, " +
-            //                        $"{obj.Rectangle.X + obj.Rectangle.W}, {obj.Rectangle.Y}, {obj.Rectangle.Y + obj.Rectangle.H}");
-            //}
-            //log.LogInformation("Color Scheme:");
-            //log.LogInformation("Is black and white?: " + imageAnalysis.Color.IsBWImg);
-            //log.LogInformation("Accent color: " + imageAnalysis.Color.AccentColor);
-            //log.LogInformation("Dominant background color: " + imageAnalysis.Color.DominantColorBackground);
-            //log.LogInformation("Dominant foreground color: " + imageAnalysis.Color.DominantColorForeground);
-            //log.LogInformation("Dominant colors: " + string.Join(",", imageAnalysis.Color.DominantColors));
             log.LogInformation($"Has Bird: {hasBird}, Has Cat : {hasCat}");
-            var newFileName = imageName;
+            // Decide where to move the file according to its category
+            string newFileName = GetNewFileName(hasBird, hasCat, imageName, configuration);
+            if (hasCat)
+            {
+                await SendMessageToDevice(configuration, "get them!", log);
+            }
+            MoveBlob(configuration, imageName, newFileName, log);
+            // Store analysis along with file
+            var congnitiveServicesAnalysisFileName = Path.ChangeExtension(newFileName, "json");
+            CreateCognitiveServicesAnalysisFile(configuration, imageAnalysis, congnitiveServicesAnalysisFileName, log);
+            // Put in small delay to stop spamming cognitive services
+            Thread.Sleep(200); 
+        }
+        private static string GetNewFileName(bool hasBird, bool hasCat, string imageName, AppConfiguration configuration)
+        {
+            string newFileName;
             if (hasBird)
             {
                 newFileName = "birds/" + imageName;
@@ -74,7 +72,6 @@ namespace BirdCamFunction
             else if (hasCat)
             {
                 newFileName = "cats/" + imageName;
-                await SendMessageToDevice(configuration, "get them!", log);
             }
             else
             {
@@ -83,10 +80,7 @@ namespace BirdCamFunction
             if (!string.IsNullOrEmpty(configuration.DeviceId)) {
                 newFileName = newFileName.Replace(configuration.DeviceId + "/", "");
             }
-            MoveBlob(configuration, imageName, newFileName, log);
-            var diagnosticsFileName = Path.ChangeExtension(newFileName, "json");
-            CreateDiagnosticsFile(configuration, imageAnalysis, diagnosticsFileName, log);
-
+            return newFileName;
         }
         public static ComputerVisionClient Authenticate(string endpoint, string key)
         {
@@ -113,7 +107,7 @@ namespace BirdCamFunction
             newBlob.StartCopyFromUri(new Uri(copyUri));
             blob.Delete();
         }
-        public static void CreateDiagnosticsFile(AppConfiguration configuration, ImageAnalysis imageAnalysis, string fileName, ILogger log)
+        public static void CreateCognitiveServicesAnalysisFile(AppConfiguration configuration, ImageAnalysis imageAnalysis, string fileName, ILogger log)
         {
             BlobServiceClient blobClient = new BlobServiceClient(configuration.IoTStorageConnectionString);
             BlobContainerClient container = blobClient.GetBlobContainerClient(ProcessedContainerName);

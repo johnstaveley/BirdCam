@@ -6,7 +6,6 @@ using System;
 using System.Device.Gpio;
 using System.IO;
 using System.Text;
-using System.Text.Json;
 using System.Threading.Tasks;
 using Unosquare.RaspberryIO;
 
